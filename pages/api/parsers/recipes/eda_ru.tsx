@@ -1,14 +1,13 @@
 import puppeteer, {Browser, Page} from "puppeteer";
 import {NextApiHandler} from "next";
-import {deserialize, serialize} from "v8";
-import {Sequelize} from "sequelize";
+import {Model, Optional} from "sequelize";
 import Recipe from "../_pgsql/_models/Recipe";
-import fs from "fs";
+
+const MAIN_DOMAIN: string = 'https://eda.ru';
 
 const Handler: NextApiHandler = async (req, res) => {
     const browser: Browser = await puppeteer.launch();
     const page: Page = await browser.newPage();
-    const url: string = 'https://eda.ru';
 
     await page.setUserAgent(
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' +
@@ -18,28 +17,23 @@ const Handler: NextApiHandler = async (req, res) => {
     );
 
 //     max page 714 (11.01.2023)
+    for (let pageNumber = 0; pageNumber < 3; pageNumber++) {
+        const pageUrl = MAIN_DOMAIN + `/recepty?page=${pageNumber + 1}`;
+        // const pageUrl = MAIN_DOMAIN + `/recepty?page=${714}`;
 
-    // for (let pageNumber = 0; pageNumber < 714; pageNumber++) {
-    await page.goto(url + `/recepty?page=${714}`);
-    // await page.goto(url + `/recepty?page=${pageNumber}`);
-    await page.waitForSelector('main', {
-        timeout: 2000
-    });
+        console.log(pageUrl);
 
-    // await parseRecipeList(page);
+        await page.goto(pageUrl, {timeout: 5000}).catch(r => console.log(r));
+        await page.waitForSelector('main', {timeout: 2000}).catch(r => console.log(r));
 
-    const urls: (string | null | undefined)[] = await page.$$eval('body main a span[title]', getRecipeUrls);
+        const urls: (string | null | undefined)[] = await page.$$eval('body main a span[title]', getRecipeUrls);
 
-    await processUrls(await browser, urls);
-    // urls.forEach(url => await getRecipeData(await browser.newPage(), url));
+        await processingUrlsFromList(browser, urls);
 
-    // fs.writeFileSync('public/href2.json', JSON.stringify(urls));
-    // fs.writeFileSync('public/href.json', JSON.stringify(urls));
-    // }
+        await new Promise(r => setTimeout(r, 2000));
+    }
 
     await browser.close();
-
-    // const recipe = await Recipe.findByPk(1).catch(r => console.log(r));
 
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/json');
@@ -48,12 +42,7 @@ const Handler: NextApiHandler = async (req, res) => {
 
 export default Handler;
 
-const parseRecipeList = (page: Page) => {
-    const urls = page.$$eval('body main a span[title]', getRecipeUrls);
-
-    fs.writeFileSync('public/href2.json', JSON.stringify(urls));
-}
-
+// Получение списка ссылок на рецепты со страницы рецептов
 const getRecipeUrls = (elements: HTMLElement[]) => {
     return elements
         .filter(item => {
@@ -64,29 +53,56 @@ const getRecipeUrls = (elements: HTMLElement[]) => {
         .map(item => item?.parentElement?.getAttribute('href'));
 }
 
-const processUrls = async (browser: Browser, urls: (string | null | undefined)[]) => {
-    fs.writeFileSync('public/href.json', JSON.stringify(urls));
-    const domain: string = 'https://eda.ru';
-
-    for (const url of urls) {
-        url && await getRecipeData(await browser.newPage(), domain + url);
-    }
+// Получение данных рецептов с одной страницы списка рецептов
+const processingUrlsFromList = async (browser: Browser, urls: (string | null | undefined)[]) => {
+    await Promise.all(
+        urls.map(
+            async url => getRecipeDataAndSave(await browser.newPage(), url || '')
+        )
+    );
 }
 
-const getRecipeData = async (page: Page, url: string) => {
-    console.log(url);
+// Получение и сохранение данных одного рецепта
+const getRecipeDataAndSave = async (page: Page, url: string) => {
+    const pageUrl = MAIN_DOMAIN + url;
 
-    await page.goto(url);
-    await page.waitForSelector('main', {timeout: 2_000}).catch(r => null);
+    await page.goto(pageUrl, {timeout: 5_000}).catch(r => console.log(r));
+    await page.waitForSelector('main', {timeout: 2_000}).catch(r => console.log(r));
 
     const title = await page
         .$eval('span[itemprop="name"]', el => el?.textContent)
         .catch(r => console.log(r));
 
-    fs.writeFileSync('public/href2.json', JSON.stringify({
-        'url': url,
-        'title': title,
-    }));
+    await saveRecipeDataToDb({
+        source_url: url,
+        source_id: 2,
+        name: (await page
+                .$eval('span[itemprop="name"]', el => el?.textContent)
+                .catch(r => console.log(r))
+            || '').replace(/[ ]/g, ' '),
+    });
 
     await page.close();
+}
+
+// Сохранение данных рецепта
+const saveRecipeDataToDb = async (data: Optional<any, string>) => {
+    let recipe: Model<any, any> | null = null;
+
+    try {
+        recipe = await Recipe.findOne({
+            where: {
+                source_url: data.source_url,
+            },
+        });
+    } catch (e: any) {
+        console.log(e.message);
+    }
+
+    if (recipe) {
+        return;
+    }
+
+    recipe = Recipe.build(data);
+    await recipe.save();
 }

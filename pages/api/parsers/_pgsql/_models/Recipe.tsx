@@ -14,10 +14,14 @@ const Recipe = db.define(
             type: DataTypes.STRING,
             allowNull: true,
         },
-        // url: {
-        //     type: DataTypes.STRING,
-        //     allowNull: false
-        // },
+        source_url: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+        source_id: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
     },
     {
         timestamps: false,
