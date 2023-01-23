@@ -13,6 +13,7 @@ const db = new Sequelize({
         acquire: 30_000,
         idle: 10_000
     },
+    logging: false,
 });
 
 export default db;

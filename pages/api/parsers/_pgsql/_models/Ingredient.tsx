@@ -1,11 +1,8 @@
 import db from "../db";
 import {DataTypes} from "sequelize";
-import Ingredient from "./Ingredient";
-import RecipeIngredient from "./RecipeIngredient";
-import RecipeStep from "./RecipeStep";
 
-const Recipe = db.define(
-    'recipe',
+const Ingredient = db.define(
+    'ingredient',
     {
         id: {
             type: DataTypes.INTEGER,
@@ -16,6 +13,7 @@ const Recipe = db.define(
         name: {
             type: DataTypes.STRING,
             allowNull: true,
+            unique: true,
         },
         description: {
             type: DataTypes.STRING,
@@ -25,36 +23,16 @@ const Recipe = db.define(
             type: DataTypes.STRING,
             allowNull: true,
         },
-        source_id: {
-            type: DataTypes.INTEGER,
-            allowNull: true,
-        },
         main_photo_id: {
             type: DataTypes.INTEGER,
-            allowNull: true,
-        },
-        source_url: {
-            type: DataTypes.STRING,
             allowNull: true,
         },
     },
     {
         createdAt: 'created_at',
         updatedAt: 'updated_at',
-        tableName: 'recipe',
+        tableName: 'ingredient',
     }
 );
 
-Recipe.belongsToMany(Ingredient, {
-    as: 'ingredients',
-    through: RecipeIngredient,
-    foreignKey: 'recipe_id',
-    otherKey: 'ingredient_id',
-});
-
-Recipe.hasMany(RecipeStep, {
-    as: 'steps',
-    foreignKey: 'recipe_id',
-});
-
-export default Recipe;
+export default Ingredient;

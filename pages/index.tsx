@@ -58,6 +58,9 @@ const Home = () => {
                         </div>
                     </div>
                 </div>
+
+                <input type="text"  />
+
             </main>
         </>
     );
