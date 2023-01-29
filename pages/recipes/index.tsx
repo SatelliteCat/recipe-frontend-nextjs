@@ -1,38 +1,44 @@
-import {useSearchParams} from "next/navigation";
-import {useEffect, useState} from "react";
+import Link from "next/link";
+import {GetServerSideProps, InferGetServerSidePropsType} from "next";
 
-const Recipes = () => {
-    const searchParams = useSearchParams();
-    const search = searchParams.get('search');
+export const getServerSideProps: GetServerSideProps<{ recipes: [] }> = async (context) => {
+    const url = new URL('/api/v1/recipes', process.env.NEXT_PUBLIC_API_HOST);
+    const search = context.query?.search || '';
+    let recipes: [] = [];
 
-    const [recipes, setRecipes] = useState(null);
+    if (search && typeof search === "string") {
+        url.searchParams.append('search', search);
+    }
 
-    useEffect(() => {
-        const fetchRecipes = async () => {
-            const response = await fetch('http://127.0.0.1:3001/api/v1/recipe?search=' + search)
-                .then((res) => res.json())
-                .then((data) => {
-                    setRecipes(data);
-                })
-                .catch((r) => {
-                });
-        };
+    try {
+        const response = await fetch(url);
+        recipes = await response.json();
+    } catch (e) {
+    }
 
-        fetchRecipes();
-    }, []);
+    return {
+        props: {
+            recipes
+        }
+    }
+}
 
+const Recipes = ({recipes}: InferGetServerSidePropsType<typeof getServerSideProps>) => {
     return (
         <>
-            Hello
+            <Link href='/'>
+                <h1>Home</h1>
+            </Link>
             <br/>
-            <pre>
-                {search}
-            </pre>
+            <h1>Recipes</h1>
+            <br/>
             <br/>
             {
-                recipes && recipes.map(({Id, Name, Url}) => (
-                    <div key={Id}>
-                        <a href={Url}>{Id} : {Name}</a>
+                recipes && Array.isArray(recipes) && recipes.map(({id, name, uuid}) => (
+                    <div key={id}>
+                        <Link href={`recipes/${uuid}`}>
+                            {id} : {name}
+                        </Link>
                     </div>
                 ))
             }

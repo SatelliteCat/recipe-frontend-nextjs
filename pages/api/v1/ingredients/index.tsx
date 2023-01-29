@@ -4,11 +4,7 @@ import {findByFilters} from "../../../../storage/pgsql/repository/recipe/RecipeR
 type ResponseData = {};
 
 const Handler = async (req: NextApiRequest, res: NextApiResponse<ResponseData>) => {
-    const {search} = req.query as { search: string };
-
-    const recipes = await findByFilters(search);
-
-    res.status(200).json(recipes);
+    res.status(200).json([]);
 }
 
 export default Handler;
