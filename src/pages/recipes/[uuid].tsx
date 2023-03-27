@@ -1,5 +1,5 @@
-import MainLayout from "../../components/MainLayout";
-import styles from "../../styles/MainLayout.module.scss"
+import MainLayout from "../../components/layouts/mainLayout/MainLayout";
+import styles from "../../components/layouts/mainLayout/MainLayout.module.scss"
 import {GetStaticProps, InferGetStaticPropsType} from "next";
 import Link from "next/link";
 

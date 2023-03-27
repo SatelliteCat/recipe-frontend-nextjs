@@ -1,6 +1,12 @@
 import Recipe from "../../models/Recipe";
 import {Op} from "sequelize";
 
+export const findAll = async () => {
+    return await Recipe.findAll({
+        limit: 20,
+    });
+}
+
 export const findByFilters = async (filters: string) => {
     return await Recipe.findAll({
         where: {

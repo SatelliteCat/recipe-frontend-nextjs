@@ -1,12 +1,16 @@
 import {NextApiRequest, NextApiResponse} from "next";
-import {findByFilters} from "../../../../storage/pgsql/repository/recipe/RecipeRepository";
+import {findAll, findByFilters} from "@/storage/pgsql/repository/recipe/RecipeRepository";
 
 type ResponseData = {};
 
 const Handler = async (req: NextApiRequest, res: NextApiResponse<ResponseData>) => {
     const {search} = req.query as { search: string };
 
-    const recipes = await findByFilters(search);
+    let recipes = await findByFilters(search);
+
+    if (recipes.length < 1) {
+        recipes = await findAll();
+    }
 
     res.status(200).json(recipes);
 }

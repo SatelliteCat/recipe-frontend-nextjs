@@ -1,5 +1,5 @@
-import MainLayout from "../../components/MainLayout";
-import styles from "../../styles/MainLayout.module.scss"
+import MainLayout from "../../components/layouts/mainLayout/MainLayout";
+import styles from "../../components/layouts/mainLayout/MainLayout.module.scss"
 import {GetStaticProps, InferGetStaticPropsType} from "next";
 import Link from "next/link";
 
@@ -7,6 +7,22 @@ type Ingredient = {
     id: number,
     name: string,
     uuid: string,
+};
+
+const Ingredient = ({ingredient}: InferGetStaticPropsType<typeof getStaticProps>) => {
+    return (
+        <MainLayout>
+            <Link href='/'>
+                <h1>Home</h1>
+            </Link>
+            <br/>
+            <h1 className={styles.h1_layout}>{ingredient?.name}</h1>
+            <br/>
+            <p>
+                {ingredient?.id} {ingredient?.name} {ingredient?.uuid}
+            </p>
+        </MainLayout>
+    );
 };
 
 export const getStaticPaths = async () => {
@@ -23,7 +39,7 @@ export const getStaticPaths = async () => {
 
     return {
         paths,
-        fallback: true,
+        fallback: 'blocking',
     }
 }
 
@@ -43,24 +59,9 @@ export const getStaticProps: GetStaticProps<{ ingredient: Ingredient }> = async 
     return {
         props: {
             ingredient
-        }
+        },
+        revalidate: 4 * 60 * 60,
     };
 }
 
-const Recipe = ({ingredient}: InferGetStaticPropsType<typeof getStaticProps>) => {
-    return (
-        <MainLayout>
-            <Link href='/'>
-                <h1>Home</h1>
-            </Link>
-            <br/>
-            <h1 className={styles.h1_layout}>{ingredient?.name}</h1>
-            <br/>
-            <p>
-                {ingredient?.id} {ingredient?.name} {ingredient?.uuid}
-            </p>
-        </MainLayout>
-    );
-};
-
-export default Recipe;
+export default Ingredient;

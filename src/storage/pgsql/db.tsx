@@ -1,5 +1,6 @@
 import {Sequelize} from "sequelize";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 const db = new Sequelize({
     dialect: 'postgres',
